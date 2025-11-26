@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -7,11 +10,6 @@ const nextConfig = {
         hostname: "randomuser.me",
       },
     ],
-  },
-
-  // ⬇️ Add this section to prevent ESLint errors during Vercel build
-  eslint: {
-    ignoreDuringBuilds: true,
   },
 };
 
