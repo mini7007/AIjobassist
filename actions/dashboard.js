@@ -1,4 +1,5 @@
 "use server";
+export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
