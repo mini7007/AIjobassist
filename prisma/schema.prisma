@@ -13,31 +13,31 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model user {
+model User {
   id              String             @id @default(uuid())
   clerkUserId     String             @unique
   email           String             @unique
   name            String?
   imageUrl        String?
   industry        String?
-  industryInsight industryinsight?   @relation(fields: [industry], references: [industry])
+  industryInsight IndustryInsight?   @relation(fields: [industry], references: [industry])
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
   bio             String?
   experience      Int?
   skills          String[]
-  assessments     assessment[]
-  resume          resume?
-  coverLetter     coverletter[]
+  assessments     Assessment[]
+  resume          Resume?
+  coverLetter     CoverLetter[]
 
   @@map("user")
 }
 
-model assessment {
+model Assessment {
   id             String   @id @default(cuid())
   userId         String
-  user           user     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id])
   quizScore      Float
   questions      Json[]
   category       String
@@ -49,10 +49,10 @@ model assessment {
   @@map("assessment")
 }
 
-model resume {
+model Resume {
   id         String   @id @default(cuid())
   userId     String   @unique
-  user       user     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
   content    String   @db.Text
   atsScore   Float?
   feedback   String?
@@ -62,10 +62,10 @@ model resume {
   @@map("resume")
 }
 
-model coverletter {
+model CoverLetter {
   id             String   @id @default(cuid())
   userId         String
-  user           user     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id])
   content        String
   jobDescription String?
   companyName    String
@@ -78,10 +78,10 @@ model coverletter {
   @@map("coverletter")
 }
 
-model industryinsight {
+model IndustryInsight {
   id                String        @id @default(cuid())
   industry          String        @unique
-  users             user[]
+  users             User[]
   salaryRanges      Json[]
   growthRate        Float
   demandLevel       DemandLevel
