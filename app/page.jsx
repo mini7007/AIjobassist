@@ -186,7 +186,7 @@ export default function Home() {
               Join thousands of professionals who are advancing their careers
               with AI-powered guidance.
             </p>
-            <Link href="https://jobgeniusai.vercel.app/sign-in?after_sign_in_url=https%3A%2F%2Fjobgeniusai.vercel.app%2Fonboarding&after_sign_up_url=https%3A%2F%2Fjobgeniusai.vercel.app%2Fonboarding&redirect_url=https%3A%2F%2Fjobgeniusai.vercel.app%2F" passHref>
+            <Link href="#" passHref>
               <Button
                 size="lg"
                 variant="secondary"
