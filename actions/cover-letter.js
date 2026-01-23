@@ -13,7 +13,7 @@ export async function generateCoverLetter(data) {
 
   if (!process.env.GEMINI_API_KEY) {
     throw new Error(
-      "GEMINI_API_KEY not configured. Set GEMINI_API_KEY in your environment to enable AI cover letter generation."
+      "GEMINI_API_KEY not configured. Set GEMINI_API_KEY in your environment to enable AI cover letter generation.",
     );
   }
 
@@ -25,8 +25,8 @@ export async function generateCoverLetter(data) {
 
   const prompt = `
     Write a professional cover letter for a ${data.jobTitle} position at ${
-    data.companyName
-  }.
+      data.companyName
+    }.
     
     About the candidate:
     - Industry: ${user.industry}
@@ -70,18 +70,18 @@ export async function generateCoverLetter(data) {
     if (error?.code === "P1001" || error?.code === "P2021") {
       throw new Error(
         "Database not configured or unreachable: " +
-          (error.message || String(error))
+          (error.message || String(error)),
       );
     }
     if (error?.message && error.message.toLowerCase().includes("api key")) {
       throw new Error(
         "AI service not configured (GEMINI_API_KEY). Please check your environment variables. " +
-          (error.message || String(error))
+          (error.message || String(error)),
       );
     }
     throw new Error(
       "Failed to generate cover letter. Make sure GEMINI_API_KEY is set and valid. " +
-        (error.message || String(error))
+        (error.message || String(error)),
     );
   }
 }
@@ -106,6 +106,16 @@ export async function getCoverLetters() {
       },
     });
   } catch (error) {
+    console.error("Error fetching cover letters:", error);
+    if (error?.code === "P1001" || error?.code === "P2021") {
+      throw new Error(
+        "Database not configured or unreachable. Make sure migrations are applied.",
+      );
+    }
+    throw error;
+  }
+}
+
 export async function getCoverLetter(id) {
   const userId = await getEffectiveUserId();
   if (!userId) throw new Error("Unauthorized");
@@ -127,12 +137,12 @@ export async function getCoverLetter(id) {
     console.error("Error fetching cover letter:", error);
     if (error?.code === "P1001" || error?.code === "P2021") {
       throw new Error(
-        "Database not configured or unreachable. Make sure migrations are applied."
+        "Database not configured or unreachable. Make sure migrations are applied.",
       );
     }
     throw error;
   }
-} });
+}
 
 export async function deleteCoverLetter(id) {
   const userId = await getEffectiveUserId();
@@ -155,19 +165,9 @@ export async function deleteCoverLetter(id) {
     console.error("Error deleting cover letter:", error);
     if (error?.code === "P1001" || error?.code === "P2021") {
       throw new Error(
-        "Database not configured or unreachable. Make sure migrations are applied."
+        "Database not configured or unreachable. Make sure migrations are applied.",
       );
     }
     throw error;
   }
-} });
-
-  if (!user) throw new Error("User not found");
-
-  return await db.coverLetter.delete({
-    where: {
-      id,
-      userId: user.id,
-    },
-  });
 }
