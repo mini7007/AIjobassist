@@ -2,18 +2,19 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { getEffectiveUserId } from "@/lib/auth-helper";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function generateCoverLetter(data) {
   const userId = await getEffectiveUserId();
   if (!userId) throw new Error("Unauthorized");
 
-  if (!process.env.GEMINI_API_KEY) {
+  if (!process.env.OPENAI_API_KEY) {
     throw new Error(
-      "GEMINI_API_KEY not configured. Set GEMINI_API_KEY in your environment to enable AI cover letter generation.",
+      "OPENAI_API_KEY not configured. Set OPENAI_API_KEY in your environment to enable AI cover letter generation.",
     );
   }
 
@@ -51,12 +52,25 @@ export async function generateCoverLetter(data) {
 
   try {
     console.log("Starting cover letter generation...");
-    console.log("API Key present:", !!process.env.GEMINI_API_KEY);
-    console.log("Model:", model.model);
+    console.log("API Key present:", !!process.env.OPENAI_API_KEY);
 
-    const result = await model.generateContent(prompt);
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert professional cover letter writer.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
+    });
     console.log("AI Generation successful");
-    const content = result.response.text().trim();
+    const content = response.choices[0].message.content.trim();
 
     const coverLetter = await db.coverLetter.create({
       data: {
@@ -83,12 +97,12 @@ export async function generateCoverLetter(data) {
     }
     if (error?.message && error.message.toLowerCase().includes("api key")) {
       throw new Error(
-        "AI service not configured (GEMINI_API_KEY). Please check your environment variables. " +
+        "AI service not configured (OPENAI_API_KEY). Please check your environment variables. " +
           (error.message || String(error)),
       );
     }
     throw new Error(
-      "Failed to generate cover letter. Make sure GEMINI_API_KEY is set and valid. " +
+      "Failed to generate cover letter. Make sure OPENAI_API_KEY is set and valid. " +
         (error.message || String(error)),
     );
   }

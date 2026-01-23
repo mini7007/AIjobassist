@@ -2,18 +2,20 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { getEffectiveUserId } from "@/lib/auth-helper";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function generateQuiz() {
   const userId = await getEffectiveUserId();
   if (!userId) throw new Error("Unauthorized");
 
-  if (!process.env.GEMINI_API_KEY) {
+  if (!process.env.OPENAI_API_KEY) {
     throw new Error(
-      "AI service not configured (GEMINI_API_KEY). Please check your environment variables. Quiz generation not available.",
+      "AI service not configured (OPENAI_API_KEY). Please check your environment variables. Quiz generation not available.",
+    );
     );
   }
 
@@ -51,13 +53,25 @@ export async function generateQuiz() {
 
   try {
     console.log("Starting quiz generation...");
-    console.log("API Key present:", !!process.env.GEMINI_API_KEY);
-    console.log("Model:", model.model);
+    console.log("API Key present:", !!process.env.OPENAI_API_KEY);
 
-    const result = await model.generateContent(prompt);
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert technical interviewer. Generate questions in valid JSON format only.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
     console.log("AI Generation successful");
-    const response = result.response;
-    const text = response.text();
+    const text = response.choices[0].message.content;
     const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
     const quiz = JSON.parse(cleanedText);
 
@@ -75,12 +89,12 @@ export async function generateQuiz() {
     }
     if (error?.message && error.message.toLowerCase().includes("api key")) {
       throw new Error(
-        "AI service not configured (GEMINI_API_KEY). Please check your environment variables. " +
+        "AI service not configured (OPENAI_API_KEY). Please check your environment variables. " +
           (error.message || String(error)),
       );
     }
     throw new Error(
-      "Failed to generate quiz questions. Make sure GEMINI_API_KEY is configured. " +
+      "Failed to generate quiz questions. Make sure OPENAI_API_KEY is configured. " +
         (error.message || String(error)),
     );
   }

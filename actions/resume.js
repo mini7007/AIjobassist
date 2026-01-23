@@ -2,11 +2,12 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { getEffectiveUserId } from "@/lib/auth-helper";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import { revalidatePath } from "next/cache";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function saveResume(content) {
   const userId = await getEffectiveUserId();
@@ -70,9 +71,10 @@ export async function improveWithAI({ current, type }) {
   const userId = await getEffectiveUserId();
   if (!userId) throw new Error("Unauthorized");
 
-  if (!process.env.GEMINI_API_KEY) {
+  if (!process.env.OPENAI_API_KEY) {
     throw new Error(
-      "AI service not configured (GEMINI_API_KEY). Please check your environment variables. AI resume improvements not available.",
+      "AI service not configured (OPENAI_API_KEY). Please check your environment variables. AI resume improvements not available.",
+    );
     );
   }
 
@@ -103,13 +105,26 @@ export async function improveWithAI({ current, type }) {
 
   try {
     console.log("Starting AI resume improvement...");
-    console.log("API Key present:", !!process.env.GEMINI_API_KEY);
+    console.log("API Key present:", !!process.env.OPENAI_API_KEY);
     console.log("Type:", type);
 
-    const result = await model.generateContent(prompt);
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert resume writer and career coach.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+    });
     console.log("AI Generation successful");
-    const response = result.response;
-    const improvedContent = response.text().trim();
+    const improvedContent = response.choices[0].message.content.trim();
     return improvedContent;
   } catch (error) {
     console.error("Error improving content:", error);
@@ -123,7 +138,7 @@ export async function improveWithAI({ current, type }) {
     }
     if (error?.message && error.message.toLowerCase().includes("api key")) {
       throw new Error(
-        "AI service not configured (GEMINI_API_KEY). Please check your environment variables. " +
+        "AI service not configured (OPENAI_API_KEY). Please check your environment variables. " +
           (error.message || String(error)),
       );
     }
