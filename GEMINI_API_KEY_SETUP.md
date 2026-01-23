@@ -28,7 +28,7 @@ GEMINI_API_KEY=AIzaSyCgvG1aYdzE3aud_TVoFhOYZMuqHCh8ALc
 ### 1. **Resume Generation** ✅
 
 - **File**: `actions/resume.js`
-- **Model Used**: `gemini-2.0-flash`
+- **Model Used**: `gemini-3-pro-preview`
 - **Features**:
   - AI-powered resume optimization
   - Content-based suggestions
@@ -38,7 +38,7 @@ GEMINI_API_KEY=AIzaSyCgvG1aYdzE3aud_TVoFhOYZMuqHCh8ALc
 
 ```javascript
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" });
 ```
 
 **API Key Validation**:
@@ -54,7 +54,7 @@ if (!process.env.GEMINI_API_KEY) {
 ### 2. **Cover Letter Generation** ✅
 
 - **File**: `actions/cover-letter.js`
-- **Model Used**: `gemini-2.0-flash`
+- **Model Used**: `gemini-3-pro-preview`
 - **Features**:
   - Professional cover letter writing
   - Job description analysis
@@ -65,7 +65,7 @@ if (!process.env.GEMINI_API_KEY) {
 
 ```javascript
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" });
 ```
 
 **API Key Validation**:
@@ -83,7 +83,7 @@ if (!process.env.GEMINI_API_KEY) {
 ### 3. **Interview Prep / Quiz Generation** ✅
 
 - **File**: `actions/interview.js`
-- **Model Used**: `gemini-2.0-flash`
+- **Model Used**: `gemini-3-pro-preview`
 - **Features**:
   - Technical interview question generation
   - Multiple choice format (4 options)
@@ -95,7 +95,7 @@ if (!process.env.GEMINI_API_KEY) {
 
 ```javascript
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" });
 ```
 
 **API Key Validation**:
@@ -124,7 +124,7 @@ if (!process.env.GEMINI_API_KEY) {
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" });
 
 const result = await model.generateContent(prompt);
 ```
