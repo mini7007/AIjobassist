@@ -3,6 +3,7 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { getEffectiveUserId } from "@/lib/auth-helper";
 import OpenAI from "openai";
+import { retryWithBackoff, generateTemplateResponse } from "@/lib/ai-utils";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -54,23 +55,52 @@ export async function generateCoverLetter(data) {
     console.log("Starting cover letter generation...");
     console.log("API Key present:", !!process.env.OPENAI_API_KEY);
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert professional cover letter writer.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
-    console.log("AI Generation successful");
-    const content = response.choices[0].message.content.trim();
+    let content;
+
+    try {
+      // Try to call OpenAI with retry logic
+      const response = await retryWithBackoff(
+        () =>
+          openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content: "You are an expert professional cover letter writer.",
+              },
+              {
+                role: "user",
+                content: prompt,
+              },
+            ],
+            temperature: 0.7,
+            max_tokens: 1000,
+          }),
+        3, // max retries
+        1000, // initial delay
+      );
+      console.log("AI Generation successful");
+      content = response.choices[0].message.content.trim();
+    } catch (apiError) {
+      // If API fails (quota, rate limit, etc.), use template
+      console.warn(
+        "API call failed, using template response:",
+        apiError?.message,
+      );
+      if (apiError?.status === 429 || apiError?.code === "insufficient_quota") {
+        console.log("Quota exceeded, generating template response...");
+        content = generateTemplateResponse("coverLetter", {
+          jobTitle: data.jobTitle,
+          companyName: data.companyName,
+          industry: user.industry,
+          experience: user.experience,
+          skills: user.skills,
+          candidateName: user.name,
+        });
+      } else {
+        throw apiError;
+      }
+    }
 
     const coverLetter = await db.coverLetter.create({
       data: {
@@ -95,15 +125,8 @@ export async function generateCoverLetter(data) {
           (error.message || String(error)),
       );
     }
-    if (error?.message && error.message.toLowerCase().includes("api key")) {
-      throw new Error(
-        "AI service not configured (OPENAI_API_KEY). Please check your environment variables. " +
-          (error.message || String(error)),
-      );
-    }
     throw new Error(
-      "Failed to generate cover letter. Make sure OPENAI_API_KEY is set and valid. " +
-        (error.message || String(error)),
+      "Failed to generate cover letter: " + (error.message || String(error)),
     );
   }
 }

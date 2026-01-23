@@ -3,6 +3,7 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { getEffectiveUserId } from "@/lib/auth-helper";
 import OpenAI from "openai";
+import { retryWithBackoff, generateTemplateResponse } from "@/lib/ai-utils";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -54,28 +55,58 @@ export async function generateQuiz() {
     console.log("Starting quiz generation...");
     console.log("API Key present:", !!process.env.OPENAI_API_KEY);
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an expert technical interviewer. Generate questions in valid JSON format only.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 2000,
-    });
-    console.log("AI Generation successful");
-    const text = response.choices[0].message.content;
-    const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
-    const quiz = JSON.parse(cleanedText);
+    let questions;
 
-    return quiz.questions;
+    try {
+      // Try to call OpenAI with retry logic
+      const response = await retryWithBackoff(
+        () =>
+          openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You are an expert technical interviewer. Generate questions in valid JSON format only.",
+              },
+              {
+                role: "user",
+                content: prompt,
+              },
+            ],
+            temperature: 0.7,
+            max_tokens: 2000,
+          }),
+        3,
+        1000,
+      );
+      console.log("AI Generation successful");
+      const text = response.choices[0].message.content;
+      const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
+      const quiz = JSON.parse(cleanedText);
+      questions = quiz.questions;
+    } catch (apiError) {
+      // If API fails, use template
+      console.warn(
+        "API call failed, using template response:",
+        apiError?.message,
+      );
+      if (apiError?.status === 429 || apiError?.code === "insufficient_quota") {
+        console.log("Quota exceeded, generating template response...");
+        const templateResponse = generateTemplateResponse(
+          "interviewQuestions",
+          {
+            topic: topic || "Technical Interview",
+            jobRole: jobRole || "Software Engineer",
+          },
+        );
+        questions = templateResponse.questions;
+      } else {
+        throw apiError;
+      }
+    }
+
+    return questions;
   } catch (error) {
     console.error("Error generating quiz:", error);
     console.error("Error type:", error?.constructor?.name);

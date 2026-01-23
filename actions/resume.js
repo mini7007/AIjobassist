@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { getEffectiveUserId } from "@/lib/auth-helper";
 import OpenAI from "openai";
 import { revalidatePath } from "next/cache";
+import { retryWithBackoff, generateTemplateResponse } from "@/lib/ai-utils";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -107,23 +108,49 @@ export async function improveWithAI({ current, type }) {
     console.log("API Key present:", !!process.env.OPENAI_API_KEY);
     console.log("Type:", type);
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert resume writer and career coach.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 500,
-    });
-    console.log("AI Generation successful");
-    const improvedContent = response.choices[0].message.content.trim();
+    let improvedContent;
+
+    try {
+      // Try to call OpenAI with retry logic
+      const response = await retryWithBackoff(
+        () =>
+          openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content: "You are an expert resume writer and career coach.",
+              },
+              {
+                role: "user",
+                content: prompt,
+              },
+            ],
+            temperature: 0.7,
+            max_tokens: 500,
+          }),
+        3,
+        1000,
+      );
+      console.log("AI Generation successful");
+      improvedContent = response.choices[0].message.content.trim();
+    } catch (apiError) {
+      // If API fails, use template
+      console.warn(
+        "API call failed, using template response:",
+        apiError?.message,
+      );
+      if (apiError?.status === 429 || apiError?.code === "insufficient_quota") {
+        console.log("Quota exceeded, generating template response...");
+        improvedContent = generateTemplateResponse("resumeImprovement", {
+          skills: "",
+          experience: "",
+        });
+      } else {
+        throw apiError;
+      }
+    }
+
     return improvedContent;
   } catch (error) {
     console.error("Error improving content:", error);
@@ -142,7 +169,7 @@ export async function improveWithAI({ current, type }) {
       );
     }
     throw new Error(
-      "Failed to improve content with AI. Make sure GEMINI_API_KEY is configured. " +
+      "Failed to improve content with AI. Make sure OPENAI_API_KEY is configured. " +
         (error.message || String(error)),
     );
   }
