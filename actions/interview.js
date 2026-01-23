@@ -16,7 +16,6 @@ export async function generateQuiz() {
     throw new Error(
       "AI service not configured (OPENAI_API_KEY). Please check your environment variables. Quiz generation not available.",
     );
-    );
   }
 
   const user = await db.user.findUnique({
@@ -60,7 +59,8 @@ export async function generateQuiz() {
       messages: [
         {
           role: "system",
-          content: "You are an expert technical interviewer. Generate questions in valid JSON format only.",
+          content:
+            "You are an expert technical interviewer. Generate questions in valid JSON format only.",
         },
         {
           role: "user",

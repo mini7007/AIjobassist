@@ -75,7 +75,6 @@ export async function improveWithAI({ current, type }) {
     throw new Error(
       "AI service not configured (OPENAI_API_KEY). Please check your environment variables. AI resume improvements not available.",
     );
-    );
   }
 
   const user = await db.user.findUnique({
