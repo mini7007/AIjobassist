@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { SignInButton } from "@clerk/nextjs";
 
 const HeroSection = () => {
   const imageRef = useRef(null);
@@ -41,11 +42,11 @@ const HeroSection = () => {
           </p>
         </div>
         <div className="flex justify-center space-x-4">
-          <Link href="https://jobgeniusai.vercel.app/sign-in?after_sign_in_url=https%3A%2F%2Fjobgeniusai.vercel.app%2Fonboarding&after_sign_up_url=https%3A%2F%2Fjobgeniusai.vercel.app%2Fonboarding&redirect_url=https%3A%2F%2Fjobgeniusai.vercel.app%2F">
+          <SignInButton>
             <Button size="lg" className="px-8">
               Get Started
             </Button>
-          </Link>
+          </SignInButton>
           <Link href="https://www.linkedin.com/in/devgoyalg/">
             <Button size="lg" variant="outline" className="px-8">
               Watch Demo

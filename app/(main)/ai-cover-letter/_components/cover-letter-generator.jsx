@@ -51,9 +51,14 @@ export default function CoverLetterGenerator() {
 
   const onSubmit = async (data) => {
     try {
-      await generateLetterFn(data);
+      const result = await generateLetterFn(data);
+      if (!result) {
+        toast.error("Failed to generate cover letter. Please check your API key.");
+      }
     } catch (error) {
-      toast.error(error.message || "Failed to generate cover letter");
+      console.error("Cover letter generation error:", error);
+      const errorMessage = error?.message || "Failed to generate cover letter";
+      toast.error(errorMessage);
     }
   };
 

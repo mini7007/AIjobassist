@@ -75,12 +75,13 @@ export async function generateCoverLetter(data) {
     }
     if (error?.message && error.message.toLowerCase().includes("api key")) {
       throw new Error(
-        "AI service not configured (GEMINI_API_KEY). " +
+        "AI service not configured (GEMINI_API_KEY). Please check your environment variables. " +
           (error.message || String(error))
       );
     }
     throw new Error(
-      "Failed to generate cover letter: " + (error.message || String(error))
+      "Failed to generate cover letter. Make sure GEMINI_API_KEY is set and valid. " +
+        (error.message || String(error))
     );
   }
 }
@@ -89,47 +90,77 @@ export async function getCoverLetters() {
   const userId = await getEffectiveUserId();
   if (!userId) throw new Error("Unauthorized");
 
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
 
-  if (!user) throw new Error("User not found");
+    if (!user) throw new Error("User not found");
 
-  return await db.coverLetter.findMany({
-    where: {
-      userId: user.id,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-}
-
+    return await db.coverLetter.findMany({
+      where: {
+        userId: user.id,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  } catch (error) {
 export async function getCoverLetter(id) {
   const userId = await getEffectiveUserId();
   if (!userId) throw new Error("Unauthorized");
 
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
 
-  if (!user) throw new Error("User not found");
+    if (!user) throw new Error("User not found");
 
-  return await db.coverLetter.findUnique({
-    where: {
-      id,
-      userId: user.id,
-    },
-  });
-}
+    return await db.coverLetter.findUnique({
+      where: {
+        id,
+        userId: user.id,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching cover letter:", error);
+    if (error?.code === "P1001" || error?.code === "P2021") {
+      throw new Error(
+        "Database not configured or unreachable. Make sure migrations are applied."
+      );
+    }
+    throw error;
+  }
+} });
 
 export async function deleteCoverLetter(id) {
   const userId = await getEffectiveUserId();
   if (!userId) throw new Error("Unauthorized");
 
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    if (!user) throw new Error("User not found");
+
+    return await db.coverLetter.delete({
+      where: {
+        id,
+        userId: user.id,
+      },
+    });
+  } catch (error) {
+    console.error("Error deleting cover letter:", error);
+    if (error?.code === "P1001" || error?.code === "P2021") {
+      throw new Error(
+        "Database not configured or unreachable. Make sure migrations are applied."
+      );
+    }
+    throw error;
+  }
+} });
 
   if (!user) throw new Error("User not found");
 

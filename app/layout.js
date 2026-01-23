@@ -23,7 +23,7 @@ export default function RootLayout({ children }) {
 
     if (!pub) {
       console.warn(
-        "Clerk publishable key is missing (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY). Sign-in may fail."
+        "Clerk publishable key is missing (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY). Sign-in may fail.",
       );
     }
 
@@ -45,7 +45,7 @@ export default function RootLayout({ children }) {
       }}
     >
       <html lang="en" suppressHydrationWarning>
-        <head>
+        <head suppressHydrationWarning>
           <link rel="icon" href="/logo5.png" sizes="any" />
 
           {/* Google Analytics Tag : Google tag (gtag.js) */}
@@ -64,7 +64,7 @@ export default function RootLayout({ children }) {
             }}
           />
         </head>
-        <body className={`${inter.className}`}>
+        <body className={`${inter.className}`} suppressHydrationWarning>
           <ThemeProvider
             attribute="class"
             defaultTheme="dark"

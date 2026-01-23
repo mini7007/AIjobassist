@@ -40,11 +40,11 @@ export async function saveResume(content) {
     if (error?.code === "P1001" || error?.code === "P2021") {
       throw new Error(
         "Database not configured or migrations not applied: " +
-          (error.message || String(error))
+          (error.message || String(error)),
       );
     }
     throw new Error(
-      "Failed to save resume: " + (error.message || String(error))
+      "Failed to save resume: " + (error.message || String(error)),
     );
   }
 }
@@ -72,7 +72,7 @@ export async function improveWithAI({ current, type }) {
 
   if (!process.env.GEMINI_API_KEY) {
     throw new Error(
-      "GEMINI_API_KEY not configured. Set GEMINI_API_KEY in your environment to enable AI resume improvements."
+      "AI service not configured (GEMINI_API_KEY). Please check your environment variables. AI resume improvements not available.",
     );
   }
 
@@ -110,11 +110,18 @@ export async function improveWithAI({ current, type }) {
     console.error("Error improving content:", error);
     if (error?.code === "P1001" || error?.code === "P2021") {
       throw new Error(
-        "Database not available: " + (error.message || String(error))
+        "Database not available: " + (error.message || String(error)),
+      );
+    }
+    if (error?.message && error.message.toLowerCase().includes("api key")) {
+      throw new Error(
+        "AI service not configured (GEMINI_API_KEY). Please check your environment variables. " +
+          (error.message || String(error)),
       );
     }
     throw new Error(
-      "Failed to improve content: " + (error.message || String(error))
+      "Failed to improve content with AI. Make sure GEMINI_API_KEY is configured. " +
+        (error.message || String(error)),
     );
   }
 }

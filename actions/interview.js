@@ -13,7 +13,7 @@ export async function generateQuiz() {
 
   if (!process.env.GEMINI_API_KEY) {
     throw new Error(
-      "GEMINI_API_KEY not configured. Set GEMINI_API_KEY in your environment to enable AI quiz generation."
+      "AI service not configured (GEMINI_API_KEY). Please check your environment variables. Quiz generation not available.",
     );
   }
 
@@ -31,8 +31,8 @@ export async function generateQuiz() {
     Generate 10 technical interview questions for a ${
       user.industry
     } professional${
-    user.skills?.length ? ` with expertise in ${user.skills.join(", ")}` : ""
-  }.
+      user.skills?.length ? ` with expertise in ${user.skills.join(", ")}` : ""
+    }.
     
     Each question should be multiple choice with 4 options.
     
@@ -62,17 +62,18 @@ export async function generateQuiz() {
     if (error?.code === "P1001" || error?.code === "P2021") {
       throw new Error(
         "Database not configured or unreachable: " +
-          (error.message || String(error))
+          (error.message || String(error)),
       );
     }
     if (error?.message && error.message.toLowerCase().includes("api key")) {
       throw new Error(
-        "AI service not configured (GEMINI_API_KEY). " +
-          (error.message || String(error))
+        "AI service not configured (GEMINI_API_KEY). Please check your environment variables. " +
+          (error.message || String(error)),
       );
     }
     throw new Error(
-      "Failed to generate quiz questions: " + (error.message || String(error))
+      "Failed to generate quiz questions. Make sure GEMINI_API_KEY is configured. " +
+        (error.message || String(error)),
     );
   }
 }
@@ -104,7 +105,7 @@ export async function saveQuizResult(questions, answers, score) {
     const wrongQuestionsText = wrongAnswers
       .map(
         (q) =>
-          `Question: "${q.question}"\nCorrect Answer: "${q.answer}"\nUser Answer: "${q.userAnswer}"`
+          `Question: "${q.question}"\nCorrect Answer: "${q.answer}"\nUser Answer: "${q.userAnswer}"`,
       )
       .join("\n\n");
 
@@ -122,7 +123,7 @@ export async function saveQuizResult(questions, answers, score) {
     try {
       if (!process.env.GEMINI_API_KEY) {
         throw new Error(
-          "GEMINI_API_KEY not configured. Skipping AI improvement tip."
+          "GEMINI_API_KEY not configured. Skipping AI improvement tip.",
         );
       }
       const tipResult = await model.generateContent(improvementPrompt);
@@ -152,11 +153,11 @@ export async function saveQuizResult(questions, answers, score) {
     if (error?.code === "P1001" || error?.code === "P2021") {
       throw new Error(
         "Database not configured or unreachable: " +
-          (error.message || String(error))
+          (error.message || String(error)),
       );
     }
     throw new Error(
-      "Failed to save quiz result: " + (error.message || String(error))
+      "Failed to save quiz result: " + (error.message || String(error)),
     );
   }
 }
@@ -187,11 +188,11 @@ export async function getAssessments() {
     if (error?.code === "P1001" || error?.code === "P2021") {
       throw new Error(
         "Database not configured or unreachable: " +
-          (error.message || String(error))
+          (error.message || String(error)),
       );
     }
     throw new Error(
-      "Failed to fetch assessments: " + (error.message || String(error))
+      "Failed to fetch assessments: " + (error.message || String(error)),
     );
   }
 }
