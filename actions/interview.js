@@ -50,7 +50,12 @@ export async function generateQuiz() {
   `;
 
   try {
+    console.log("Starting quiz generation...");
+    console.log("API Key present:", !!process.env.GEMINI_API_KEY);
+    console.log("Model:", model.model);
+
     const result = await model.generateContent(prompt);
+    console.log("AI Generation successful");
     const response = result.response;
     const text = response.text();
     const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
@@ -59,6 +64,9 @@ export async function generateQuiz() {
     return quiz.questions;
   } catch (error) {
     console.error("Error generating quiz:", error);
+    console.error("Error type:", error?.constructor?.name);
+    console.error("Error code:", error?.code);
+    console.error("Error status:", error?.status);
     if (error?.code === "P1001" || error?.code === "P2021") {
       throw new Error(
         "Database not configured or unreachable: " +

@@ -102,12 +102,20 @@ export async function improveWithAI({ current, type }) {
   `;
 
   try {
+    console.log("Starting AI resume improvement...");
+    console.log("API Key present:", !!process.env.GEMINI_API_KEY);
+    console.log("Type:", type);
+
     const result = await model.generateContent(prompt);
+    console.log("AI Generation successful");
     const response = result.response;
     const improvedContent = response.text().trim();
     return improvedContent;
   } catch (error) {
     console.error("Error improving content:", error);
+    console.error("Error type:", error?.constructor?.name);
+    console.error("Error code:", error?.code);
+    console.error("Error status:", error?.status);
     if (error?.code === "P1001" || error?.code === "P2021") {
       throw new Error(
         "Database not available: " + (error.message || String(error)),
