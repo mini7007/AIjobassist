@@ -7,11 +7,13 @@ This document explains the quota resilience implementation that ensures JobGeniu
 ## Problem Statement
 
 The application was experiencing **429 Too Many Requests** errors when OpenAI API quota was exceeded. This caused features to fail completely, preventing users from:
+
 - Generating cover letters
-- Improving resumes  
+- Improving resumes
 - Taking interview quizzes
 
 ### Root Cause
+
 The free/trial tier of OpenAI API has strict quota limits (generativelanguage.googleapis.com metrics). When exceeded, the API returns a 429 status code with `insufficient_quota` error code, causing the entire feature to crash.
 
 ## Solution Architecture
@@ -19,15 +21,17 @@ The free/trial tier of OpenAI API has strict quota limits (generativelanguage.go
 We implemented a **three-layer resilience strategy**:
 
 ### 1. Automatic Retry Logic (`retryWithBackoff`)
+
 - **Purpose**: Handle transient rate limit errors (429, 500, 503)
 - **Strategy**: Exponential backoff with configurable retries
-- **Default Configuration**: 
+- **Default Configuration**:
   - Max retries: 3
   - Initial delay: 1000ms
   - Backoff multiplier: 2x (1s → 2s → 4s)
 - **Behavior**: If a request fails with 429, automatically waits and retries
 
 ### 2. Graceful Fallback Templates
+
 - **Purpose**: Provide functional responses when API quota is permanently exceeded
 - **Implementation**: Professional, template-based responses that maintain user value
 - **Fallback Types**:
@@ -36,6 +40,7 @@ We implemented a **three-layer resilience strategy**:
   - **Interview Questions**: 10 pre-generated technical interview questions
 
 ### 3. Error Handling & Logging
+
 - Comprehensive logging of API failures for debugging
 - User-friendly error messages (not raw API errors)
 - Clear distinction between temporary and permanent failures
@@ -47,17 +52,17 @@ We implemented a **three-layer resilience strategy**:
 ```javascript
 // Retry with exponential backoff
 async function retryWithBackoff(
-  fn,                    // Async function to retry
-  maxRetries = 3,        // Number of retries
-  delayMs = 1000         // Initial delay in ms
+  fn, // Async function to retry
+  maxRetries = 3, // Number of retries
+  delayMs = 1000, // Initial delay in ms
 ) {
   // Returns result or throws error after all retries exhausted
 }
 
 // Generate fallback template response
 function generateTemplateResponse(
-  type,                  // "coverLetter" | "resumeImprovement" | "interviewQuestions"
-  data                   // Context data for customization
+  type, // "coverLetter" | "resumeImprovement" | "interviewQuestions"
+  data, // Context data for customization
 ) {
   // Returns professional template response matching the type
 }
@@ -66,6 +71,7 @@ function generateTemplateResponse(
 ### Updated Action Files
 
 #### `actions/cover-letter.js`
+
 ```javascript
 const response = await retryWithBackoff(
   () => openai.chat.completions.create({...}),
@@ -73,11 +79,13 @@ const response = await retryWithBackoff(
   1000         // delay
 );
 ```
+
 - Wraps OpenAI call with automatic retry logic
 - If all retries fail and status is 429: generates template cover letter
 - Maintains full functionality even during quota issues
 
 #### `actions/resume.js`
+
 ```javascript
 const improveWithAI = async (type, content) => {
   try {
@@ -95,10 +103,12 @@ const improveWithAI = async (type, content) => {
   }
 };
 ```
+
 - Resume improvements handled with same retry + fallback pattern
 - Template provides actionable improvement suggestions
 
 #### `actions/interview.js`
+
 ```javascript
 const generateQuiz = async (topic, jobRole, difficulty) => {
   try {
@@ -119,12 +129,14 @@ const generateQuiz = async (topic, jobRole, difficulty) => {
   }
 };
 ```
+
 - Interview questions handled with same retry + fallback pattern
 - Template provides 10 relevant technical questions
 
 ## Behavior Flow
 
 ### Scenario 1: Normal Operation (API Available)
+
 ```
 User Request
     ↓
@@ -136,6 +148,7 @@ Display to User ✓
 ```
 
 ### Scenario 2: Transient Rate Limit
+
 ```
 User Request
     ↓
@@ -155,6 +168,7 @@ Display to User ✓
 ```
 
 ### Scenario 3: Quota Exceeded (Persistent)
+
 ```
 User Request
     ↓
@@ -177,12 +191,12 @@ Display to User ✓
 
 ## Error Codes Handled
 
-| Status Code | Meaning | Retry Behavior |
-|------------|---------|---|
-| 429 | Rate Limited | Retry with exponential backoff |
-| 500 | Server Error | Retry with exponential backoff |
-| 503 | Service Unavailable | Retry with exponential backoff |
-| Other | Client/Auth Error | Fail immediately, don't retry |
+| Status Code | Meaning             | Retry Behavior                 |
+| ----------- | ------------------- | ------------------------------ |
+| 429         | Rate Limited        | Retry with exponential backoff |
+| 500         | Server Error        | Retry with exponential backoff |
+| 503         | Service Unavailable | Retry with exponential backoff |
+| Other       | Client/Auth Error   | Fail immediately, don't retry  |
 
 ## Logging
 
@@ -195,6 +209,7 @@ All API operations log their status:
 ```
 
 If quota is exceeded:
+
 ```
 [WARN] API call failed, using template response
 [WARN] Status: 429, Code: insufficient_quota
@@ -204,6 +219,7 @@ If quota is exceeded:
 ## Testing the Implementation
 
 ### Test 1: Normal Generation (API Working)
+
 ```bash
 curl -X POST https://yourdomain.com/api/generate-cover-letter \
   -H "Content-Type: application/json" \
@@ -212,13 +228,17 @@ curl -X POST https://yourdomain.com/api/generate-cover-letter \
 ```
 
 ### Test 2: Simulate Quota Exceeded
+
 Temporarily set invalid `OPENAI_API_KEY` or exceed quota:
+
 ```bash
 # Should still succeed with professional template response
 ```
 
 ### Test 3: Verify Retry Behavior
+
 Watch logs during transient rate limits:
+
 ```
 [LOG] Starting quiz generation...
 [WARN] API call failed (429), retrying in 1000ms
@@ -235,6 +255,7 @@ Watch logs during transient rate limits:
 ## User Experience
 
 ### Current (Before Implementation)
+
 ```
 User clicks "Generate Cover Letter"
     ↓
@@ -244,6 +265,7 @@ Feature broken, user frustrated
 ```
 
 ### After Implementation
+
 ```
 User clicks "Generate Cover Letter"
     ↓
@@ -288,16 +310,19 @@ When deploying to Vercel:
 ## Troubleshooting
 
 ### Still getting 429 errors on frontend?
+
 - Check Vercel logs: Dashboard → Deployments → Runtime Logs
 - Verify `OPENAI_API_KEY` is set in Vercel environment variables
 - Confirm API key is still valid and has quota available
 
 ### Templates look generic?
+
 - Templates are intentionally professional and functional
 - They provide value even without real AI
 - Consider upgrading OpenAI plan for higher quota
 
 ### Retries are too slow?
+
 - Reduce `maxRetries` from 3 to 2 in action files
 - Reduce `delayMs` from 1000 to 500 for faster retries
 - Tradeoff: Fewer retries = faster fallback but might miss recoverable errors
@@ -305,6 +330,7 @@ When deploying to Vercel:
 ## Summary
 
 This implementation ensures **JobGeniusAI is production-ready** with:
+
 - ✅ Automatic retry logic for transient failures
 - ✅ Professional fallback templates for persistent quota issues
 - ✅ Zero downtime on API failures
