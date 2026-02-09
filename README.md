@@ -127,7 +127,7 @@ To learn more about the technologies used in this project:
 - [Gemini API Documentation](https://ai.google.dev/gemini-api)
 - [Neon Documentation](https://neon.tech/docs)
 
-## 🤝 Connect with Me
+## 🤝 Connect with Me..
 
 <a href="https://github.com/mini7007" target="_blank">
   <img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"/>
